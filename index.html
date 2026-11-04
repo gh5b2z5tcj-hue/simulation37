@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>37% 법칙 시뮬레이션</title>
+<style>
+body { font-family: "Malgun Gothic", sans-serif; background: #f0f0f0; color: #222; margin: 0; padding: 15px; }
+#wrap { max-width: 600px; margin: 0 auto; background: white; border: 2px solid #333; padding: 15px; }
+h1 { text-align: center; background: #3355aa; color: white; padding: 12px; margin: 0 0 15px 0; font-size: 24px; }
+h2 { border-bottom: 2px solid #3355aa; padding-bottom: 4px; margin-top: 30px; }
+button { font-size: 16px; padding: 10px 14px; margin: 4px; border: 2px solid #333; background: #ddd; cursor: pointer; }
+button:hover { background: #bbb; }
+button:disabled { color: #999; cursor: default; }
+#box { border: 1px solid #999; background: #fafafa; text-align: center; padding: 20px 10px; margin: 10px 0; }
+#title { font-size: 28px; font-weight: bold; margin: 10px 0; }
+#score { font-size: 18px; color: #cc2200; }
+#bar span { display: inline-block; width: 1%; height: 12px; }
+.gray { background: #ffcc44; }
+.blue { background: #99bbee; }
+.mine { background: #22aa44; }
+.now { border: 1px solid black; box-sizing: border-box; }
+.res { border: 2px dashed #3355aa; padding: 8px; margin: 10px 0; background: #eef3ff; }
+#graph { border: 1px solid #999; width: 100%; margin-top: 10px; background: white; }
+</style>
+</head>
+<body>
+<div id="wrap">
+<h1>37% 법칙 시뮬레이션</h1>
+<p>작품이 한 개씩 나옵니다. 안 보이는 점수가 제일 높은 작품을 골라보세요! 한번 넘기면 다시 못 돌아와요.</p>
+<p><b>37% 법칙:</b> 처음 37%는 그냥 구경만 하고, 그 다음부터 <u>지금까지 본 것보다 점수가 높은 첫 번째 작품</u>을 고르기!</p>
+
+<h2>1. 직접 해보기</h2>
+<div id="bar"></div>
+<small><span style="background:#ffcc44">노랑</span>=구경 구간 / <span style="background:#99bbee">파랑</span>=고르는 구간 / <span style="background:#22aa44;color:white">초록</span>=내가 고른 것</small>
+<div id="box"></div>
+<div id="result"></div>
+
+<h2>2. 컴퓨터로 여러번 돌리기</h2>
+<p>구경하는 개수를 0개~98개로 바꿔가면서 최고 작품을 고를 확률을 구합니다.</p>
+<p>반복 횟수:
+<select id="times">
+<option value="1000">1000번</option>
+<option value="3000" selected>3000번</option>
+<option value="10000">10000번</option>
+</select>
+<button id="runBtn" onclick="runSim()">실행</button></p>
+<canvas id="graph" width="560" height="280"></canvas>
+<p id="simResult"></p>
+</div>
+
+<script>
+// 작품 제목 (CSV에서 가져옴, 중복 하나 뺌)
+var titles = ["기생충", "더 글로리", "인터스텔라", "눈물의 여왕", "인셉션", "무빙", "타이타닉", "오징어 게임", "라라랜드", "도깨비", "범죄도시", "사랑의 불시착", "어벤져스: 엔드게임", "이태원 클라쓰", "극한직업", "슬기로운 의사생활", "부산행", "이상한 변호사 우영우", "해리 포터와 마법사의 돌", "킹덤", "겨울왕국", "응답하라 1988", "탑건: 매버릭", "선재 업고 튀어", "쇼생크 탈출", "빈센조", "스파이더맨: 노 웨이 홈", "호텔 델루나", "아바타", "재벌집 막내아들", "포레스트 검프", "눈이 부시게", "올드보이", "마스크걸", "토이 스토리", "나의 아저씨", "쥬라기 공원", "더 킹: 영원의 군주", "코코", "D.P.", "헤어질 결심", "마이 네임", "월-E", "스카이 캐슬", "트루먼 쇼", "갯마을 차차차", "반지의 제왕: 반지 원정대", "사이코지만 괜찮아", "명량", "킹더랜드", "센과 치히로의 행방불명", "약한영웅 Class 1", "보헤미안 랩소디", "시그널", "악마를 보았다", "이번 생은 처음이라", "인사이드 아웃", "작은 아씨들", "건축학개론", "마스크", "노트북", "멜로가 체질", "베테랑", "경이로운 소문", "쿵푸 팬더", "푸른 바다의 전설", "미나리", "지금 우리 학교는", "레미제라블", "태양의 후예", "위대한 쇼맨", "스물다섯 스물하나", "알라딘", "빈센트 반 고흐: 천재 화가의 비밀", "베이비 드라이버", "나의 해방일지", "라이언 일병 구하기", "악의 꽃", "인사이드 아웃 2", "더 퍼스트 슬램덩크", "어바웃 타임", "사이코메트리 그녀석", "블랙 팬서", "스위트홈", "죽은 시인의 사회", "쌈, 마이웨이", "주토피아", "킬러들의 쇼핑몰", "다크 나이트", "김비서가 왜 그럴까", "엘리멘탈", "응답하라 1994", "매트릭스", "닥터 차정숙", "레디 플레이어 원", "모범택시", "파묘", "굿 플레이스", "슬램덩크"];
+var N = titles.length;
+var CUT = Math.round(N * 0.37); // 37%
+var items = [];
+var now = 0;
+var finished = false;
+var picked = -1;
+
+// 배열 섞기
+function shuffle(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+// 새 게임 시작
+function newGame() {
+  var scores = [];
+  for (var i = 1; i <= N; i++) scores.push(i);
+  shuffle(scores);
+  var names = shuffle(titles.slice());
+  items = [];
+  for (var i = 0; i < N; i++) {
+    items.push({ name: names[i], score: scores[i] });
+  }
+  now = 0;
+  finished = false;
+  picked = -1;
+  document.getElementById("result").innerHTML = "";
+  show();
+}
+
+// 지금까지 본 것 중 최고점
+function bestSoFar() {
+  var m = 0;
+  for (var i = 0; i < now; i++) {
+    if (items[i].score > m) m = items[i].score;
+  }
+  return m;
+}
+
+// 화면 그리기
+function show() {
+  var bar = "";
+  for (var i = 0; i < N; i++) {
+    var c = i < CUT ? "gray" : "blue";
+    if (i == picked) c = "mine";
+    if (i == now && !finished) c += " now";
+    bar += '<span class="' + c + '"></span>';
+  }
+  document.getElementById("bar").innerHTML = bar;
+
+  var box = document.getElementById("box");
+  if (finished) {
+    box.innerHTML = '<p>끝!</p><button onclick="newGame()">다시 하기</button>';
+    return;
+  }
+  var it = items[now];
+  var msg = "";
+  if (now < CUT) {
+    msg = "구경 구간입니다. (" + (CUT - now) + "개 남음)";
+  } else if (it.score > bestSoFar()) {
+    msg = "지금까지 본 것 중에 제일 높아요!";
+  } else {
+    msg = "지금까지 본 것보다 낮아요.";
+  }
+  var h = "<div>" + (now + 1) + " / " + N + "번째</div>";
+  h += '<div id="title">' + it.name + "</div>";
+  h += '<div id="score">점수: ' + it.score + "</div>";
+  h += "<p>" + msg + "</p>";
+  h += "<p>지금까지 최고점: " + (now == 0 ? "없음" : bestSoFar()) + "</p>";
+  h += '<button onclick="next()"' + (now == N - 1 ? " disabled" : "") + ">넘기기</button>";
+  h += '<button onclick="pick()">이거 고를래요</button>';
+  box.innerHTML = h;
+}
+
+function next() {
+  now++;
+  show();
+}
+
+// 고르기
+function pick() {
+  finished = true;
+  picked = now;
+  show();
+
+  // 진짜 1등 찾기
+  var top = 0;
+  for (var i = 0; i < N; i++) {
+    if (items[i].score == N) top = i;
+  }
+
+  // 37% 법칙대로 했을 때
+  var max = 0;
+  for (var i = 0; i < CUT; i++) {
+    if (items[i].score > max) max = items[i].score;
+  }
+  var rule = N - 1;
+  for (var i = CUT; i < N; i++) {
+    if (items[i].score > max) {
+      rule = i;
+      break;
+    }
+  }
+
+  var out = "<div class='res'><b>내 선택:</b> " + items[picked].name + " (" + (picked + 1) + "번째, " + (N - items[picked].score + 1) + "등)<br>";
+  out += (items[picked].score == N ? "정답! 최고 작품이에요 🎉" : "아쉽다.. 최고 작품이 아니에요") + "</div>";
+  out += "<div class='res'><b>진짜 1등:</b> " + items[top].name + " (" + (top + 1) + "번째)</div>";
+  out += "<div class='res'><b>37% 법칙으로 했다면:</b> " + items[rule].name + " (" + (rule + 1) + "번째, " + (N - items[rule].score + 1) + "등)<br>";
+  out += (items[rule].score == N ? "성공!" : "실패") + "</div>";
+  document.getElementById("result").innerHTML = out;
+}
+
+// 시뮬레이션
+function runSim() {
+  var times = parseInt(document.getElementById("times").value);
+  var wins = [];
+  for (var k = 0; k < N; k++) wins.push(0);
+  var p = [];
+
+  for (var t = 0; t < times; t++) {
+    p = [];
+    for (var i = 0; i < N; i++) p.push(i);
+    shuffle(p);
+    // k개 구경하고 고르기
+    for (var k = 0; k < N; k++) {
+      var m = -1;
+      for (var j = 0; j < k; j++) {
+        if (p[j] > m) m = p[j];
+      }
+      var choice = N - 1;
+      for (var j = k; j < N; j++) {
+        if (p[j] > m) {
+          choice = j;
+          break;
+        }
+      }
+      if (p[choice] == N - 1) wins[k]++;
+    }
+  }
+
+  var prob = [];
+  var bestK = 0;
+  for (var k = 0; k < N; k++) {
+    prob.push(wins[k] / times);
+    if (prob[k] > prob[bestK]) bestK = k;
+  }
+  drawGraph(prob, bestK);
+  document.getElementById("simResult").innerHTML =
+    "확률이 제일 높은 건 <b>" + bestK + "개</b> 구경했을 때 (" + (prob[bestK] * 100).toFixed(1) + "%)<br>" +
+    "37% 지점(" + CUT + "개)의 확률: <b>" + (prob[CUT] * 100).toFixed(1) + "%</b>";
+}
+
+// 그래프 (canvas)
+function drawGraph(prob, bestK) {
+  var cv = document.getElementById("graph");
+  var g = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  var left = 40, bottom = 30, top = 10, right = 10;
+  g.fillStyle = "white";
+  g.fillRect(0, 0, W, H);
+  var maxY = 0.5;
+  function X(k) { return left + (W - left - right) * k / (N - 1); }
+  function Y(v) { return H - bottom - (H - bottom - top) * v / maxY; }
+
+  g.strokeStyle = "#ccc";
+  g.fillStyle = "#333";
+  g.font = "12px sans-serif";
+  for (var v = 0; v <= 0.5; v += 0.1) {
+    g.beginPath();
+    g.moveTo(left, Y(v));
+    g.lineTo(W - right, Y(v));
+    g.stroke();
+    g.fillText(Math.round(v * 100) + "%", 5, Y(v) + 4);
+  }
+  for (var q = 0; q <= 100; q += 25) {
+    g.fillText(q + "%", X(Math.round((N - 1) * q / 100)) - 10, H - 10);
+  }
+
+  // 37% 선
+  g.strokeStyle = "orange";
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(X(CUT), top);
+  g.lineTo(X(CUT), H - bottom);
+  g.stroke();
+  g.fillStyle = "orange";
+  g.fillText("37%", X(CUT) + 4, top + 12);
+
+  // 그래프 선
+  g.strokeStyle = "blue";
+  g.lineWidth = 2;
+  g.beginPath();
+  for (var k = 0; k < N; k++) {
+    if (k == 0) g.moveTo(X(k), Y(prob[k]));
+    else g.lineTo(X(k), Y(prob[k]));
+  }
+  g.stroke();
+
+  // 최고점
+  g.fillStyle = "red";
+  g.beginPath();
+  g.arc(X(bestK), Y(prob[bestK]), 5, 0, Math.PI * 2);
+  g.fill();
+}
+
+newGame();
+</script>
+</body>
+</html>
